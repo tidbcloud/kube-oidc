@@ -2,6 +2,7 @@ package authproxy
 
 import (
 	"crypto/tls"
+	"fmt"
 	"log"
 	"net"
 	"net/http"
@@ -105,11 +106,11 @@ func (p *proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		authorizationHeader = "Authorization"
 	)
 
-	p.logf("Proxy Request: %v", r.URL.Path)
-	oidcAuth := func() {
+	p.logf("Proxy Request: %v %v", r.Method, r.URL.Path)
+	oidcAuth := func() error {
 		a := r.Header.Get(authorizationHeader)
 		if !strings.HasPrefix(strings.ToLower(a), bearerPrefix) {
-			return
+			return fmt.Errorf("no authorization header")
 		}
 
 		r.Header.Del(authorizationHeader)
@@ -119,7 +120,7 @@ func (p *proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		username, groups, err := p.authenticator.AuthenticateToken(token)
 		if err != nil {
 			p.logf("invalid oidc credentials: %v", err)
-			return
+			return err
 		}
 
 		p.logf("authenticate successful, username: %v, group: %v", username, groups)
@@ -127,12 +128,13 @@ func (p *proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		for _, group := range groups {
 			r.Header.Add("Impersonate-Group", group)
 		}
+		return nil
 	}
 
-	// ignore error when oidc token failed, will continue use other authenticate type
-	oidcAuth()
-
-	p.backendAuth(r)
+	// when oidc token failed, will continue use other authenticate type
+	if err := oidcAuth(); err == nil {
+		p.backendAuth(r)
+	}
 
 	if isUpgradeRequest(r) {
 		p.tcpProxy.ServeHTTP(w, r)

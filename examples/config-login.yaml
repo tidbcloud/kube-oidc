@@ -9,12 +9,12 @@ web:
     # httpsKey: "/etc/kube-oidc-login/serving.key"
 
 oidc:
-    issuer: "https://accounts.google.com"
+    issuer: "https://tidb-dev.us.auth0.com/"
     # Uncomment for providers running under a custom certificate authority
     # issuerCA: "/etc/kube-oidc-login/ca.crt"
 
-    clientID: "CLIENT_ID"
-    clientSecretFile: "secrets/client-secret"
+    clientID: "Z9mfdhVe0Nh3ylm6gr7OkwSUGLfToiux"
+    clientSecretFile: "client-secret"
 
     redirectURI: "http://localhost:8080/login/callback"
 
@@ -27,4 +27,4 @@ oidc:
 
 kubernetes:
     apiServer: "https://localhost:9443"
-    apiServerCA: "assets/ca.pem"
+
