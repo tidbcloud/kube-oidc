@@ -105,27 +105,32 @@ func (p *proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		authorizationHeader = "Authorization"
 	)
 
-	a := r.Header.Get(authorizationHeader)
-	if !strings.HasPrefix(strings.ToLower(a), bearerPrefix) {
-		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
-		return
+	p.logf("Proxy Request: %v", r.URL.Path)
+	oidcAuth := func() {
+		a := r.Header.Get(authorizationHeader)
+		if !strings.HasPrefix(strings.ToLower(a), bearerPrefix) {
+			return
+		}
+
+		r.Header.Del(authorizationHeader)
+
+		token := a[len(bearerPrefix):]
+
+		username, groups, err := p.authenticator.AuthenticateToken(token)
+		if err != nil {
+			p.logf("invalid oidc credentials: %v", err)
+			return
+		}
+
+		p.logf("authenticate successful, username: %v, group: %v", username, groups)
+		r.Header.Set("Impersonate-User", username)
+		for _, group := range groups {
+			r.Header.Add("Impersonate-Group", group)
+		}
 	}
 
-	r.Header.Del(authorizationHeader)
-
-	token := a[len(bearerPrefix):]
-
-	username, groups, err := p.authenticator.AuthenticateToken(token)
-	if err != nil {
-		p.logf("invalid credentials: %v", err)
-		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
-		return
-	}
-
-	r.Header.Set("Impersonate-User", username)
-	for _, group := range groups {
-		r.Header.Add("Impersonate-Group", group)
-	}
+	// ignore error when oidc token failed, will continue use other authenticate type
+	oidcAuth()
 
 	p.backendAuth(r)
 
