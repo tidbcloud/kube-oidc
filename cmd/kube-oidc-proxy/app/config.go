@@ -103,7 +103,6 @@ func (c *configV1) verify() error {
 		{c.OIDC.Issuer, "oidc.issuer"},
 		{c.OIDC.UsernameClaim, "oidc.usernameClaim"},
 		{c.OIDC.AllowedClientID, "oidc.allowedClientID"},
-		{c.Kubernetes.Kubeconfig, "kubernetes.kubeconfig"},
 	}
 
 	for _, req := range required {

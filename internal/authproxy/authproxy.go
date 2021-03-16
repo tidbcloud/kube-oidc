@@ -2,6 +2,7 @@ package authproxy
 
 import (
 	"crypto/tls"
+	"fmt"
 	"log"
 	"net"
 	"net/http"
@@ -105,29 +106,35 @@ func (p *proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		authorizationHeader = "Authorization"
 	)
 
-	a := r.Header.Get(authorizationHeader)
-	if !strings.HasPrefix(strings.ToLower(a), bearerPrefix) {
-		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
-		return
+	p.logf("Proxy Request: %v %v %v", r.Method, r.URL.Path, r.Header)
+	oidcAuth := func() error {
+		a := r.Header.Get(authorizationHeader)
+		if !strings.HasPrefix(strings.ToLower(a), bearerPrefix) {
+			return fmt.Errorf("no authorization header")
+		}
+
+		token := a[len(bearerPrefix):]
+
+		username, groups, err := p.authenticator.AuthenticateToken(token)
+		if err != nil {
+			p.logf("invalid oidc credentials: %v", err)
+			return err
+		}
+
+		p.logf("authenticate successful, username: %v, group: %v", username, groups)
+		r.Header.Set("Impersonate-User", username)
+		for _, group := range groups {
+			r.Header.Add("Impersonate-Group", group)
+		}
+		return nil
 	}
 
-	r.Header.Del(authorizationHeader)
-
-	token := a[len(bearerPrefix):]
-
-	username, groups, err := p.authenticator.AuthenticateToken(token)
-	if err != nil {
-		p.logf("invalid credentials: %v", err)
-		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
-		return
+	// when oidc token failed, will continue use other authenticate type
+	if err := oidcAuth(); err == nil {
+		// only delete origin header when oidc authn successful
+		r.Header.Del(authorizationHeader)
+		p.backendAuth(r)
 	}
-
-	r.Header.Set("Impersonate-User", username)
-	for _, group := range groups {
-		r.Header.Add("Impersonate-Group", group)
-	}
-
-	p.backendAuth(r)
 
 	if isUpgradeRequest(r) {
 		p.tcpProxy.ServeHTTP(w, r)

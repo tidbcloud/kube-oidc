@@ -7,6 +7,9 @@ build: bin/kube-oidc-proxy bin/kube-oidc-login
 bin/kube-oidc-proxy: FORCE
 	go build -v -ldflags $(LD_FLAGS) -o bin/kube-oidc-proxy ./cmd/kube-oidc-proxy
 
+image/kube-oidc-proxy:
+	docker build -t gcr.io/pingcap-public/kube-oidc-proxy/${VERSION} -f Dockerfile .
+
 bin/kube-oidc-login: FORCE
 	go build -v -ldflags $(LD_FLAGS) -o bin/kube-oidc-login ./cmd/kube-oidc-login
 
