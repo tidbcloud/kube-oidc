@@ -106,7 +106,7 @@ func (p *proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		authorizationHeader = "Authorization"
 	)
 
-	p.logf("Proxy Request: %v %v %v", r.Method, r.URL.Path, r.Header)
+	p.logf("Proxy Request: %v %v", r.Method, r.URL.Path)
 	oidcAuth := func() error {
 		a := r.Header.Get(authorizationHeader)
 		if !strings.HasPrefix(strings.ToLower(a), bearerPrefix) {
@@ -136,6 +136,7 @@ func (p *proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		p.backendAuth(r)
 	} else if ImpersonateDashboard(r) {
 		// TODO: remove impersonate dashboard. dashboard should use kubernetes-dashboard service account to visit kube-oidc-proxy
+		p.logf("impersonate dashboard user: system:serviceaccount:kubernetes-dashboard:kubernetes-dashboard")
 		p.backendAuth(r)
 	}
 
@@ -147,7 +148,7 @@ func (p *proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func ImpersonateDashboard(req *http.Request) bool {
-	if strings.HasPrefix(req.Header.Get("user-agent"), "dashboard") {
+	if strings.HasPrefix(req.Header.Get("User-Agent"), "dashboard") {
 		req.Header.Set("Impersonate-User", "system:serviceaccount:kubernetes-dashboard:kubernetes-dashboard")
 		return true
 	}
