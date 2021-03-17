@@ -121,6 +121,7 @@ func serveKubeOIDCProxy(configPath string) error {
 		Backend:          kubeConfig.Endpoint,
 		BackendAuth:      kubeConfig.Auth,
 		BackendTLSConfig: kubeConfig.TLSConfig,
+		DefaultGroups:    c.oidcDefaultGroups,
 		Logger:           logger,
 		Authenticator: authFunc(func(token string) (string, []string, error) {
 			username, groups, ok, err := authenticator.AuthenticateToken(token)

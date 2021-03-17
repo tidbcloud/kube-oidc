@@ -26,6 +26,7 @@ type Config struct {
 	Backend          string
 	BackendAuth      func(r *http.Request)
 	BackendTLSConfig *tls.Config
+	DefaultGroups    []string
 
 	// Authenticator for evaluating bearer tokesn of client requests.
 	Authenticator Authenticator
@@ -71,6 +72,7 @@ func New(c *Config) (http.Handler, error) {
 		tcpProxy:      tcpProxy,
 		httpProxy:     httpProxy,
 		logger:        c.Logger,
+		defaultGroups: c.DefaultGroups,
 	}, nil
 }
 
@@ -81,6 +83,8 @@ type proxy struct {
 
 	httpProxy *httputil.ReverseProxy
 	tcpProxy  *tcpReverseProxy
+
+	defaultGroups []string
 
 	logger *log.Logger
 }
@@ -121,11 +125,15 @@ func (p *proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return err
 		}
 
-		p.logf("authenticate successful, username: %v, group: %v", username, groups)
+		p.logf("authenticate successful, username: %v, groups: %+v, default groups: %+v", username, groups, p.defaultGroups)
 		r.Header.Set("Impersonate-User", username)
 		for _, group := range groups {
 			r.Header.Add("Impersonate-Group", group)
 		}
+		for _, group := range p.defaultGroups {
+			r.Header.Add("Impersonate-Group", group)
+		}
+
 		return nil
 	}
 

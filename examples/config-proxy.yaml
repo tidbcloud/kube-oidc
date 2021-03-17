@@ -18,6 +18,10 @@ oidc:
     # OAuth2 client ID that JWTs must be issued for
     allowedClientID: "CLIENT_ID"
 
+    # Set as the default groups when the user can login
+    defaultGroups:
+    - "reader"
+
 kubernetes:
     # Kubeconfig file that can be used to contact the API server.
     # If not provided, the in-cluster config will be used.
