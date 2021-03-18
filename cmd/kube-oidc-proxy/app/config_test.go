@@ -29,6 +29,8 @@ oidc:
 
   usernameClaim: "email"
   groupsClaim: "groups"
+  defaultGroups:
+  - "reader"
 
   allowedClientID: "my-client-id"
 
@@ -44,6 +46,7 @@ kubernetes:
 				oidcCA:              "/etc/certs/certs.pem",
 				oidcUsernameClaim:   "email",
 				oidcGroupsClaim:     "groups",
+				oidcDefaultGroups:   []string{"reader"},
 				oidcAllowedClientID: "my-client-id",
 				kubeconfig:          "/etc/kubeconfig",
 			},

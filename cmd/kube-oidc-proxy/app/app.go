@@ -104,15 +104,24 @@ func serveKubeOIDCProxy(configPath string) error {
 		return errors.Wrap(err, "initializing oidc authenticator")
 	}
 
-	kubeConfig, err := kubeconfig.Load(c.kubeconfig)
-	if err != nil {
-		return errors.Wrap(err, "loading kubeconfig")
+	var kubeConfig *kubeconfig.Config
+	if c.kubeconfig != "" {
+		kubeConfig, err = kubeconfig.Load(c.kubeconfig)
+		if err != nil {
+			return errors.Wrap(err, "loading kubeconfig")
+		}
+	} else {
+		kubeConfig, err = kubeconfig.LoadInCluster()
+		if err != nil {
+			return errors.Wrap(err, "loading kubeconfig in cluster")
+		}
 	}
 
 	authProxyConfig := &authproxy.Config{
 		Backend:          kubeConfig.Endpoint,
 		BackendAuth:      kubeConfig.Auth,
 		BackendTLSConfig: kubeConfig.TLSConfig,
+		DefaultGroups:    c.oidcDefaultGroups,
 		Logger:           logger,
 		Authenticator: authFunc(func(token string) (string, []string, error) {
 			username, groups, ok, err := authenticator.AuthenticateToken(token)

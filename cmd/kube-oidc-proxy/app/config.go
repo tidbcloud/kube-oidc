@@ -20,6 +20,7 @@ type config struct {
 
 	oidcUsernameClaim string
 	oidcGroupsClaim   string
+	oidcDefaultGroups []string
 
 	oidcAllowedClientID string
 
@@ -64,6 +65,7 @@ func parseConfig(b []byte) (*config, error) {
 			oidcCA:              v1.OIDC.IssuerCA,
 			oidcUsernameClaim:   v1.OIDC.UsernameClaim,
 			oidcGroupsClaim:     v1.OIDC.GroupsClaim,
+			oidcDefaultGroups:   v1.OIDC.DefaultGroups,
 			oidcAllowedClientID: v1.OIDC.AllowedClientID,
 			kubeconfig:          v1.Kubernetes.Kubeconfig,
 		}, nil
@@ -85,8 +87,9 @@ type configV1 struct {
 		Issuer   string `json:"issuer"`
 		IssuerCA string `json:"issuerCA"`
 
-		UsernameClaim string `json:"usernameClaim"`
-		GroupsClaim   string `json:"groupsClaim"`
+		UsernameClaim string   `json:"usernameClaim"`
+		GroupsClaim   string   `json:"groupsClaim"`
+		DefaultGroups []string `json:"defaultGroups"`
 
 		AllowedClientID string `json:"allowedClientID"`
 	} `json:"oidc"`
@@ -103,7 +106,6 @@ func (c *configV1) verify() error {
 		{c.OIDC.Issuer, "oidc.issuer"},
 		{c.OIDC.UsernameClaim, "oidc.usernameClaim"},
 		{c.OIDC.AllowedClientID, "oidc.allowedClientID"},
-		{c.Kubernetes.Kubeconfig, "kubernetes.kubeconfig"},
 	}
 
 	for _, req := range required {
